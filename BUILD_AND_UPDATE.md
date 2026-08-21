@@ -38,3 +38,6 @@ The app version is currently versionCode 1 / versionName 1.0.
 
 ## Codemagic
 The Codemagic workflow installs Gradle 9.3.1 because Android Gradle Plugin 9.1.1 requires Gradle 9.3.1 or newer. It uses the existing `paliaapk-release` Android signing identity.
+
+## Codemagic .env
+The project includes an empty `.env.example` so the Secrets Gradle Plugin can configure successfully in CI. Do not commit real secrets to `.env`.
