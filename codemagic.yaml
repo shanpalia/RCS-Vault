@@ -14,21 +14,34 @@ workflows:
 
     scripts:
 
-      - name: Check Android project
+      - name: Prepare Gradle wrapper
         script: |
           set -e
 
-          echo "Current directory:"
+          echo "Project:"
           pwd
 
-          echo "Checking Android project..."
+          echo "Gradle wrapper files:"
+          ls -la gradle/wrapper/
 
-          test -d app
-          test -f app/build.gradle.kts
-          test -f settings.gradle.kts
-          test -f build.gradle.kts
+          # Force Gradle 9.3.1
+          cat > gradle/wrapper/gradle-wrapper.properties <<'EOF'
+          distributionBase=GRADLE_USER_HOME
+          distributionPath=wrapper/dists
+          distributionUrl=https\://services.gradle.org/distributions/gradle-9.3.1-bin.zip
+          networkTimeout=100000
+          validateDistributionUrl=true
+          zipStoreBase=GRADLE_USER_HOME
+          zipStorePath=wrapper/dists
+          EOF
 
-          echo "Android project OK."
+          echo "Wrapper configuration:"
+          cat gradle/wrapper/gradle-wrapper.properties
+
+          chmod +x gradlew
+
+          echo "Wrapper Gradle version:"
+          ./gradlew --version
 
       - name: Check signing
         script: |
@@ -41,23 +54,10 @@ workflows:
           test -n "$CM_KEY_ALIAS"
           test -n "$CM_KEY_PASSWORD"
 
-          echo "Signing configuration detected."
-          echo "Keystore: $CM_KEYSTORE_PATH"
+          echo "Signing configuration OK."
           echo "Alias: $CM_KEY_ALIAS"
 
-      - name: Prepare Gradle
-        script: |
-          set -e
-
-          echo "Preparing Gradle 9.3.1..."
-
-          sed -i.bak 's#distributionUrl=.*#distributionUrl=https\\://services.gradle.org/distributions/gradle-9.3.1-bin.zip#' gradle/wrapper/gradle-wrapper.properties
-
-          chmod +x gradlew
-
-          ./gradlew --version
-
-      - name: Clean build
+      - name: Clean project
         script: |
           set -e
 
@@ -70,53 +70,39 @@ workflows:
         script: |
           set -e
 
-          echo "Building signed RCS Vault APK..."
+          echo "Building RCS Vault APK..."
 
           ./gradlew \
             --no-daemon \
             --no-configuration-cache \
             assembleRelease
 
-          echo "Build completed."
-
-          echo "Searching for APK..."
-
+          echo "APK files:"
           find app/build/outputs -type f -name "*.apk" -print
 
-      - name: Verify APK
-        script: |
-          set -e
-
-          APK="app/build/outputs/apk/release/app-release.apk"
-
-          if [ ! -f "$APK" ]; then
-            echo "ERROR: APK was not generated."
-            echo "Available output files:"
-            find app/build/outputs -type f -print
-            exit 1
-          fi
-
-          echo "APK found:"
-          ls -lh "$APK"
-
-      - name: Rename APK
+      - name: Verify and rename APK
         script: |
           set -e
 
           APK_DIR="app/build/outputs/apk/release"
+          APK="$APK_DIR/app-release.apk"
 
-          if [ -f "$APK_DIR/app-release.apk" ]; then
-            cp "$APK_DIR/app-release.apk" "$APK_DIR/RCS-Vault.apk"
+          if [ ! -f "$APK" ]; then
+            echo "ERROR: app-release.apk was not generated."
+            find app/build/outputs -type f -print
+            exit 1
           fi
 
-          echo "Final APK files:"
-          ls -lh "$APK_DIR"
+          cp "$APK" "$APK_DIR/RCS-Vault.apk"
+
+          echo "Final APK:"
+          ls -lh "$APK_DIR/RCS-Vault.apk"
 
     artifacts:
-      - app/build/outputs/apk/release/*.apk
+      - app/build/outputs/apk/release/RCS-Vault.apk
 
     publishing:
       scripts:
-        - name: Build completed
+        - name: Build success
           script: |
-            echo "RCS Vault APK build completed successfully."
+            echo "RCS Vault APK is ready."
