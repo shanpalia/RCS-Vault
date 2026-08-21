@@ -83,6 +83,15 @@ object PermissionHelper {
         }
     }
 
+    /** Opens this app's App Info page. Useful on Android 13+ when sideloaded apps
+     * are blocked by the restricted-settings security gate. */
+    fun getAppInfoIntent(context: Context): Intent {
+        return Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+            data = Uri.parse("package:${context.packageName}")
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+    }
+
     /**
      * Intent to open App Details settings for manual permissions.
      */

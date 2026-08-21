@@ -1,4 +1,5 @@
 package com.example.ui.screens
+import com.example.util.PermissionHelper
 
 import android.content.Intent
 import android.provider.Settings
@@ -56,7 +57,7 @@ fun HomeScreen(
         modifier = modifier
             .fillMaxSize()
             .background(BackgroundWhite),
-        contentPadding = PaddingValues(bottom = 24.dp)
+        contentPadding = PaddingValues(bottom = 16.dp)
     ) {
         // App Header: Clean White with High Density Pro Badge & Action Icons
         item {
@@ -190,26 +191,42 @@ fun HomeScreen(
                                 )
                             )
                             Text(
-                                text = "Grant notification listener access to allow automatic background RCS backup.",
+                                text = "Grant notification access to allow automatic background RCS backup.
+If Android says "App was denied access", open App Info and choose "Allow restricted settings" from the ⋮ menu, then enable Notification access.",
                                 style = MaterialTheme.typography.bodySmall.copy(
                                     color = Color(0xFF78350F)
                                 )
                             )
                             Spacer(modifier = Modifier.height(8.dp))
-                            Button(
-                                onClick = {
-                                    try {
-                                        context.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
-                                    } catch (e: Exception) {
-                                        // fallback
-                                    }
-                                },
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD97706)),
-                                shape = RoundedCornerShape(10.dp),
-                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                                modifier = Modifier.testTag("grant_notification_access_btn")
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text("Enable in Settings", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                Button(
+                                    onClick = {
+                                        try {
+                                            context.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+                                        } catch (_: Exception) { }
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD97706)),
+                                    shape = RoundedCornerShape(10.dp),
+                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                                    modifier = Modifier.testTag("grant_notification_access_btn")
+                                ) {
+                                    Text("Notification Access", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                }
+                                OutlinedButton(
+                                    onClick = {
+                                        try {
+                                            context.startActivity(PermissionHelper.getAppInfoIntent(context))
+                                        } catch (_: Exception) { }
+                                    },
+                                    shape = RoundedCornerShape(10.dp),
+                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                                    modifier = Modifier.testTag("open_app_info_btn")
+                                ) {
+                                    Text("App Info", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                }
                             }
                         }
                     }

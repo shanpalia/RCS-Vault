@@ -120,6 +120,7 @@ fun AppBottomNavigationBar(
         color = SurfacePureWhite,
         modifier = modifier
             .fillMaxWidth()
+            .navigationBarsPadding()
             .border(width = 1.dp, color = OutlineVariant)
     ) {
         Row(
