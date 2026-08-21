@@ -13,6 +13,20 @@ workflows:
         PACKAGE_NAME: com.aistudio.rcsbackup.zqmvxp
 
     scripts:
+      - name: Remove duplicate launcher resources
+        script: |
+          set -e
+          echo "Removing all conflicting launcher resources..."
+          find app/src -type f \( \
+            -name 'ic_launcher.webp' -o \
+            -name 'ic_launcher_round.webp' -o \
+            -name 'ic_launcher_foreground.png' -o \
+            -name 'ic_launcher_foreground.xml' \
+          \) -print -delete
+
+          echo "Remaining launcher resources:"
+          find app/src/main/res -type f \( -name 'ic_launcher*' \) -print
+
       - name: Clean duplicate launcher resources
         script: |
           set -e
@@ -55,6 +69,16 @@ workflows:
           gradle --version
 
           echo "Gradle 9.3.1 installed successfully."
+
+      - name: Verify launcher resources
+        script: |
+          set -e
+          if find app/src -type f \( -name 'ic_launcher.webp' -o -name 'ic_launcher_round.webp' \) | grep -q .; then
+            echo "ERROR: Duplicate launcher WEBP resources still exist:"
+            find app/src -type f \( -name 'ic_launcher.webp' -o -name 'ic_launcher_round.webp' \)
+            exit 1
+          fi
+          echo "No duplicate launcher WEBP resources found."
 
       - name: Build signed release APK
         script: |
