@@ -12,13 +12,20 @@ workflows:
       vars:
         PACKAGE_NAME: com.aistudio.rcsbackup.zqmvxp
 
-    scripts:
-      - name: Check project
-        script: |
-          set -e
-          test -f gradlew
-          test -f app/build.gradle.kts
-          chmod +x gradlew
+  - name: Check project
+  script: |
+    set -e
+
+    echo "Current directory:"
+    pwd
+
+    echo "Project files:"
+    ls -la
+
+    echo "Gradle files:"
+    find . -maxdepth 3 -type f \( -name "gradlew" -o -name "build.gradle" -o -name "build.gradle.kts" -o -name "settings.gradle" -o -name "settings.gradle.kts" \) -print
+
+    chmod +x ./gradlew
 
       - name: Check signing
         script: |
