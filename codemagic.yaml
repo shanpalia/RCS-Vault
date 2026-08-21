@@ -6,7 +6,7 @@ workflows:
 
     environment:
       android_signing:
-        - rcs_vault_keystore
+        - paliaapk-release
 
       java: 17
 
