@@ -13,6 +13,11 @@ workflows:
         PACKAGE_NAME: com.aistudio.rcsbackup.zqmvxp
 
     scripts:
+      - name: Clean duplicate launcher resources
+        script: |
+          set -e
+          find app/src/main/res -type f \( -name 'ic_launcher.webp' -o -name 'ic_launcher_foreground.xml' -o -name 'ic_launcher_foreground.png' \) -delete
+
       - name: Check project
         script: |
           set -e
