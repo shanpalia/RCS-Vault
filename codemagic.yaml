@@ -12,33 +12,40 @@ workflows:
       vars:
         PACKAGE_NAME: com.aistudio.rcsbackup.zqmvxp
 
-  - name: Check project
-  script: |
-    set -e
+    scripts:
+      - name: Check project
+        script: |
+          set -e
 
-    echo "Current directory:"
-    pwd
+          echo "Current directory:"
+          pwd
 
-    echo "Project files:"
-    ls -la
+          echo "Project files:"
+          ls -la
 
-    echo "Gradle files:"
-    find . -maxdepth 3 -type f \( -name "gradlew" -o -name "build.gradle" -o -name "build.gradle.kts" -o -name "settings.gradle" -o -name "settings.gradle.kts" \) -print
+          echo "Checking Gradle wrapper:"
+          test -f ./gradlew
 
-    chmod +x ./gradlew
+          chmod +x ./gradlew
 
       - name: Check signing
         script: |
           set -e
+
+          echo "Checking Android signing..."
+
           test -n "$CM_KEYSTORE_PATH"
           test -n "$CM_KEYSTORE_PASSWORD"
           test -n "$CM_KEY_ALIAS"
           test -n "$CM_KEY_PASSWORD"
+
           echo "Keystore configured successfully."
+          echo "Alias: $CM_KEY_ALIAS"
 
       - name: Build signed release APK
         script: |
           set -e
+
           ./gradlew --no-daemon clean assembleRelease
 
     artifacts:
