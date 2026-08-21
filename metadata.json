@@ -1,0 +1,7 @@
+{
+  "name": "RCS Vault",
+  "description": "Securely preserve what matters. Real-time on-device RCS message preservation, media archiving, and verifiable PDF reporting.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
