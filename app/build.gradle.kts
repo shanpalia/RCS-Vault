@@ -120,19 +120,3 @@ dependencies {
   "ksp"(libs.androidx.room.compiler)
   "ksp"(libs.moshi.kotlin.codegen)
 }
-
-
-// Friendly APK filename for release builds.
-tasks.configureEach {
-    if (name == "assembleRelease") {
-        doLast {
-            val apkDir = layout.buildDirectory.dir("outputs/apk/release").get().asFile
-            val defaultApk = File(apkDir, "app-release.apk")
-            val friendlyApk = File(apkDir, "RCS-Vault.apk")
-            if (defaultApk.exists()) {
-                defaultApk.copyTo(friendlyApk, overwrite = true)
-                println("Release APK: ${friendlyApk.absolutePath}")
-            }
-        }
-    }
-}

@@ -191,8 +191,7 @@ fun HomeScreen(
                                 )
                             )
                             Text(
-                                text = "Grant notification access to allow automatic background RCS backup.
-If Android says "App was denied access", open App Info and choose "Allow restricted settings" from the ⋮ menu, then enable Notification access.",
+                                text = "Grant notification access to allow automatic background RCS backup.\nIf Android says \"App was denied access\", open App Info and choose \"Allow restricted settings\" from the ⋮ menu, then enable Notification access.",
                                 style = MaterialTheme.typography.bodySmall.copy(
                                     color = Color(0xFF78350F)
                                 )

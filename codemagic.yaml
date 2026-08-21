@@ -100,7 +100,7 @@ workflows:
           export KEY_PASSWORD="$CM_KEY_PASSWORD"
 
           echo "Building signed RCS Vault APK..."
-          gradle --no-daemon clean assembleRelease
+          gradle --no-daemon --no-configuration-cache clean assembleRelease
 
     artifacts:
       - app/build/outputs/apk/release/RCS-Vault.apk
