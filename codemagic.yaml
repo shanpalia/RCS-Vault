@@ -18,34 +18,72 @@ workflows:
         script: |
           set -e
 
-          echo "Installing Gradle 9.3.1..."
+          mkdir -p "$HOME/gradle"
 
-          mkdir -p "$HOME/gradle-9.3.1"
-
-          curl -L \
-            --fail \
-            --retry 3 \
-            -o "$HOME/gradle-9.3.1.zip" \
+          curl -L --fail --retry 3 \
+            -o "$HOME/gradle/gradle.zip" \
             "https://services.gradle.org/distributions/gradle-9.3.1-bin.zip"
 
-          unzip -q -o "$HOME/gradle-9.3.1.zip" -d "$HOME"
+          unzip -q -o "$HOME/gradle/gradle.zip" -d "$HOME/gradle"
 
-          export GRADLE_HOME="$HOME/gradle-9.3.1"
+          export GRADLE_HOME="$HOME/gradle/gradle-9.3.1"
           export PATH="$GRADLE_HOME/bin:$PATH"
 
-          echo "Installed Gradle:"
           "$GRADLE_HOME/bin/gradle" --version
 
-      - name: Check Android project
+      - name: Check project
         script: |
           set -e
 
           test -d app
           test -f app/build.gradle.kts
           test -f settings.gradle.kts
-          test -f build.gradle.kts
 
-          echo "Android project detected."
+          echo "Android project OK."
+
+      - name: REMOVE ALL OLD ICON FILES
+        script: |
+          set -e
+
+          echo "======================================"
+          echo "REMOVING OLD AND DUPLICATE ICON FILES"
+          echo "======================================"
+
+          find app/src -type f -name "ic_launcher.webp" -print -delete
+          find app/src -type f -name "ic_launcher_round.webp" -print -delete
+          find app/src -type f -name "ic_launcher_foreground.xml" -print -delete
+          find app/src -type f -name "ic_launcher_foreground.png" -print -delete
+
+          rm -f app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+          rm -f app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+
+          echo ""
+          echo "Checking for remaining duplicate files..."
+
+          if find app/src -type f \( \
+            -name "ic_launcher.webp" -o \
+            -name "ic_launcher_round.webp" -o \
+            -name "ic_launcher_foreground.xml" -o \
+            -name "ic_launcher_foreground.png" \
+          \) | grep -q .; then
+
+            echo "ERROR: OLD ICON FILES STILL EXIST"
+            find app/src -type f \( \
+              -name "ic_launcher.webp" -o \
+              -name "ic_launcher_round.webp" -o \
+              -name "ic_launcher_foreground.xml" -o \
+              -name "ic_launcher_foreground.png" \
+            \)
+
+            exit 1
+          fi
+
+          echo "======================================"
+          echo "NO DUPLICATE ICON FILES FOUND"
+          echo "======================================"
+
+          echo "Remaining launcher resources:"
+          find app/src/main/res -type f -name "ic_launcher*" -print
 
       - name: Check signing
         script: |
@@ -57,13 +95,12 @@ workflows:
           test -n "$CM_KEY_PASSWORD"
 
           echo "Signing configuration OK."
-          echo "Alias: $CM_KEY_ALIAS"
 
       - name: Clean project
         script: |
           set -e
 
-          export GRADLE_HOME="$HOME/gradle-9.3.1"
+          export GRADLE_HOME="$HOME/gradle/gradle-9.3.1"
           export PATH="$GRADLE_HOME/bin:$PATH"
 
           "$GRADLE_HOME/bin/gradle" \
@@ -75,10 +112,10 @@ workflows:
         script: |
           set -e
 
-          export GRADLE_HOME="$HOME/gradle-9.3.1"
+          export GRADLE_HOME="$HOME/gradle/gradle-9.3.1"
           export PATH="$GRADLE_HOME/bin:$PATH"
 
-          echo "Building RCS Vault with Gradle 9.3.1..."
+          echo "Building RCS Vault APK..."
 
           "$GRADLE_HOME/bin/gradle" \
             --no-daemon \
@@ -89,22 +126,24 @@ workflows:
 
           find app/build/outputs -type f -name "*.apk" -print
 
-      - name: Prepare final APK
+      - name: Prepare APK
         script: |
           set -e
 
           APK_DIR="app/build/outputs/apk/release"
-          APK="$APK_DIR/app-release.apk"
 
-          if [ ! -f "$APK" ]; then
+          if [ ! -f "$APK_DIR/app-release.apk" ]; then
             echo "ERROR: APK not found."
             find app/build/outputs -type f -print
             exit 1
           fi
 
-          cp "$APK" "$APK_DIR/RCS-Vault.apk"
+          cp "$APK_DIR/app-release.apk" "$APK_DIR/RCS-Vault.apk"
 
-          echo "RCS-Vault.apk created:"
+          echo "======================================"
+          echo "RCS-Vault.apk READY"
+          echo "======================================"
+
           ls -lh "$APK_DIR/RCS-Vault.apk"
 
     artifacts:
