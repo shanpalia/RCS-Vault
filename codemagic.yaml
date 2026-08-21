@@ -23,10 +23,13 @@ workflows:
           echo "Project files:"
           ls -la
 
-          echo "Checking Gradle wrapper:"
-          test -f ./gradlew
+          echo "Checking Android project:"
+          test -d ./app
+          test -f ./app/build.gradle.kts
+          test -f ./settings.gradle.kts
+          test -f ./build.gradle.kts
 
-          chmod +x ./gradlew
+          echo "Android project found successfully."
 
       - name: Check signing
         script: |
@@ -46,7 +49,9 @@ workflows:
         script: |
           set -e
 
-          ./gradlew --no-daemon clean assembleRelease
+          echo "Starting RCS Vault release build..."
+
+          gradle --no-daemon clean assembleRelease
 
     artifacts:
       - app/build/outputs/apk/release/*.apk
