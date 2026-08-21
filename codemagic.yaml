@@ -2,7 +2,6 @@ workflows:
   rcs_vault_android:
     name: RCS Vault Android APK
     max_build_duration: 60
-    instance_type: linux_x2
 
     environment:
       android_signing:
@@ -17,7 +16,6 @@ workflows:
       - name: Check project
         script: |
           set -e
-          echo "Checking RCS Vault Android project..."
           test -f gradlew
           test -f app/build.gradle.kts
           chmod +x gradlew
@@ -25,15 +23,11 @@ workflows:
       - name: Check signing
         script: |
           set -e
-          echo "Checking Android signing..."
-
           test -n "$CM_KEYSTORE_PATH"
           test -n "$CM_KEYSTORE_PASSWORD"
           test -n "$CM_KEY_ALIAS"
           test -n "$CM_KEY_PASSWORD"
-
           echo "Keystore configured successfully."
-          echo "Alias: $CM_KEY_ALIAS"
 
       - name: Build signed release APK
         script: |
