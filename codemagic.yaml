@@ -1,0 +1,57 @@
+workflows:
+  rcs_vault_android:
+    name: RCS Vault Android APK
+    max_build_duration: 60
+    instance_type: linux_x2
+
+    environment:
+      groups:
+        - rcs_vault_signing
+      vars:
+        PACKAGE_NAME: com.aistudio.rcsbackup.zqmvxp
+        KEYSTORE_PATH: $CM_KEYSTORE_PATH
+        STORE_PASSWORD: $CM_KEYSTORE_PASSWORD
+        KEY_PASSWORD: $CM_KEY_PASSWORD
+      java: 17
+
+    scripts:
+      - name: Check project
+        script: |
+          set -e
+          echo "Checking RCS Vault Android project..."
+          test -f gradlew
+          test -f app/build.gradle.kts
+          chmod +x gradlew
+
+      - name: Configure release signing
+        script: |
+          set -e
+          if [ -z "$CM_KEYSTORE_PATH" ]; then
+            echo "ERROR: Android keystore is not configured in Codemagic."
+            echo "Upload/configure the release keystore in Codemagic and expose CM_KEYSTORE_PATH."
+            exit 1
+          fi
+          export KEYSTORE_PATH="$CM_KEYSTORE_PATH"
+          export STORE_PASSWORD="$CM_KEYSTORE_PASSWORD"
+          export KEY_PASSWORD="$CM_KEY_PASSWORD"
+          echo "Release signing environment configured."
+
+      - name: Build signed release APK
+        script: |
+          set -e
+          export KEYSTORE_PATH="$CM_KEYSTORE_PATH"
+          export STORE_PASSWORD="$CM_KEYSTORE_PASSWORD"
+          export KEY_PASSWORD="$CM_KEY_PASSWORD"
+          ./gradlew --no-daemon clean assembleRelease
+
+    artifacts:
+      - app/build/outputs/apk/release/*.apk
+      - app/build/outputs/mapping/release/mapping.txt
+
+    publishing:
+      email:
+        recipients:
+          - $CM_BUILD_EMAIL
+        notify:
+          success: true
+          failure: true

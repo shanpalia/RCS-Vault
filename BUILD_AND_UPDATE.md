@@ -17,3 +17,21 @@ For each new release increase `versionCode`, update `versionName`, APK filename/
 
 IMPORTANT:
 Keep the same signing key for every future APK update.
+
+
+## Codemagic
+The repository includes `codemagic.yaml` at the project root.
+
+In Codemagic:
+1. Connect the GitHub repository.
+2. Select the `rcs_vault_android` workflow.
+3. Configure Android code signing with the SAME release keystore for all future versions.
+4. The keystore alias must be `upload` because `app/build.gradle.kts` uses that alias.
+5. Start the workflow. The signed APK is produced as an artifact.
+
+The workflow expects Codemagic signing variables:
+- `CM_KEYSTORE_PATH`
+- `CM_KEYSTORE_PASSWORD`
+- `CM_KEY_PASSWORD`
+
+The app version is currently versionCode 1 / versionName 1.0.
