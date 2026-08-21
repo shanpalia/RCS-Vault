@@ -16,41 +16,52 @@ workflows:
       - name: Check project
         script: |
           set -e
-
-          echo "Current directory:"
-          pwd
-
-          echo "Project files:"
-          ls -la
-
-          echo "Checking Android project:"
+          echo "Checking RCS Vault Android project..."
           test -d ./app
           test -f ./app/build.gradle.kts
           test -f ./settings.gradle.kts
           test -f ./build.gradle.kts
-
-          echo "Android project found successfully."
+          test -f ./gradle/wrapper/gradle-wrapper.properties
+          echo "Android project files found."
 
       - name: Check signing
         script: |
           set -e
-
-          echo "Checking Android signing..."
-
           test -n "$CM_KEYSTORE_PATH"
           test -n "$CM_KEYSTORE_PASSWORD"
           test -n "$CM_KEY_ALIAS"
           test -n "$CM_KEY_PASSWORD"
-
-          echo "Keystore configured successfully."
+          echo "Release signing configured."
           echo "Alias: $CM_KEY_ALIAS"
+
+      - name: Install Gradle 9.3.1
+        script: |
+          set -e
+          GRADLE_VERSION=9.3.1
+          GRADLE_ZIP="$CM_BUILD_DIR/gradle-${GRADLE_VERSION}-bin.zip"
+          GRADLE_DIR="$CM_BUILD_DIR/gradle-${GRADLE_VERSION}"
+
+          echo "Downloading Gradle ${GRADLE_VERSION}..."
+          curl -fsSL "https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip" -o "$GRADLE_ZIP"
+          rm -rf "$GRADLE_DIR"
+          unzip -q "$GRADLE_ZIP" -d "$CM_BUILD_DIR"
+
+          export PATH="$GRADLE_DIR/bin:$PATH"
+          gradle --version
+
+          echo "Gradle 9.3.1 installed successfully."
 
       - name: Build signed release APK
         script: |
           set -e
+          export PATH="$CM_BUILD_DIR/gradle-9.3.1/bin:$PATH"
 
-          echo "Starting RCS Vault release build..."
+          export KEYSTORE_PATH="$CM_KEYSTORE_PATH"
+          export STORE_PASSWORD="$CM_KEYSTORE_PASSWORD"
+          export KEY_ALIAS="$CM_KEY_ALIAS"
+          export KEY_PASSWORD="$CM_KEY_PASSWORD"
 
+          echo "Building signed RCS Vault APK..."
           gradle --no-daemon clean assembleRelease
 
     artifacts:
