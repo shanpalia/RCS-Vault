@@ -42,7 +42,10 @@ class UpdateManager(private val context: Context) {
     companion object {
         private const val TAG = "UpdateManager"
         const val UPDATE_SERVER_BASE_URL = "https://shanpalia.github.io/WebsitePaliaAPK_V.2/"
-        const val VERSION_JSON_URL = "https://shanpalia.github.io/WebsitePaliaAPK_V.2/rcs-vault/version.json"
+        // Keep version.json at the website root. The legacy /rcs-vault/ path is
+        // also tried for compatibility with older deployments.
+        const val VERSION_JSON_URL = "https://shanpalia.github.io/WebsitePaliaAPK_V.2/version.json"
+        private const val LEGACY_VERSION_JSON_URL = "https://shanpalia.github.io/WebsitePaliaAPK_V.2/rcs-vault/version.json"
     }
 
     private val httpClient: OkHttpClient by lazy {
@@ -80,23 +83,40 @@ class UpdateManager(private val context: Context) {
      */
     suspend fun checkForUpdates(isManualCheck: Boolean = false): UpdateStatus = withContext(Dispatchers.IO) {
         try {
-            Log.d(TAG, "Checking update from $VERSION_JSON_URL")
-            val request = Request.Builder()
-                .url(VERSION_JSON_URL)
-                .header("User-Agent", "RCS-Vault-Android/${currentVersionName}")
-                .header("Cache-Control", "no-cache")
-                .build()
+            val candidateUrls = listOf(VERSION_JSON_URL, LEGACY_VERSION_JSON_URL).distinct()
+            var bodyString: String? = null
+            var lastHttpError: String? = null
 
-            val response = httpClient.newCall(request).execute()
-            if (!response.isSuccessful) {
-                val errorMsg = "Update server returned HTTP ${response.code}"
-                Log.w(TAG, errorMsg)
-                return@withContext UpdateStatus.Error(errorMsg, isManualCheck)
+            for (url in candidateUrls) {
+                try {
+                    Log.d(TAG, "Checking update from $url")
+                    val request = Request.Builder()
+                        .url(url)
+                        .header("User-Agent", "RCS-Vault-Android/${currentVersionName}")
+                        .header("Cache-Control", "no-cache")
+                        .build()
+
+                    httpClient.newCall(request).execute().use { response ->
+                        if (response.isSuccessful) {
+                            bodyString = response.body?.string()
+                        } else {
+                            lastHttpError = "Update server returned HTTP ${response.code}"
+                            Log.w(TAG, "$lastHttpError from $url")
+                        }
+                    }
+
+                    if (!bodyString.isNullOrBlank()) break
+                } catch (e: Exception) {
+                    lastHttpError = e.localizedMessage ?: "Network error"
+                    Log.w(TAG, "Update check failed for $url", e)
+                }
             }
 
-            val bodyString = response.body?.string()
             if (bodyString.isNullOrBlank()) {
-                return@withContext UpdateStatus.Error("Empty response from update server", isManualCheck)
+                return@withContext UpdateStatus.Error(
+                    lastHttpError ?: "Update server is unavailable",
+                    isManualCheck
+                )
             }
 
             val json = JSONObject(bodyString)

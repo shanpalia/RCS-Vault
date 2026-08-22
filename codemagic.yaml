@@ -13,138 +13,95 @@ workflows:
         PACKAGE_NAME: com.aistudio.rcsbackup.zqmvxp
 
     scripts:
-
-      - name: Install Gradle 9.3.1
+      - name: Remove duplicate launcher resources
         script: |
           set -e
+          echo "Removing all conflicting launcher resources..."
+          find app/src -type f \( \
+            -name 'ic_launcher.webp' -o \
+            -name 'ic_launcher_round.webp' -o \
+            -name 'ic_launcher_foreground.png' -o \
+            -name 'ic_launcher_foreground.xml' \
+          \) -print -delete
 
-          mkdir -p "$HOME/gradle"
+          echo "Remaining launcher resources:"
+          find app/src/main/res -type f \( -name 'ic_launcher*' \) -print
 
-          curl -L --fail --retry 3 \
-            -o "$HOME/gradle/gradle.zip" \
-            "https://services.gradle.org/distributions/gradle-9.3.1-bin.zip"
-
-          unzip -q -o "$HOME/gradle/gradle.zip" -d "$HOME/gradle"
-
-          export GRADLE_HOME="$HOME/gradle/gradle-9.3.1"
-          export PATH="$GRADLE_HOME/bin:$PATH"
-
-          "$GRADLE_HOME/bin/gradle" --version
+      - name: Clean duplicate launcher resources
+        script: |
+          set -e
+          find app/src/main/res -type f \( -name 'ic_launcher.webp' -o -name 'ic_launcher_foreground.xml' -o -name 'ic_launcher_foreground.png' \) -delete
 
       - name: Check project
         script: |
           set -e
-
-          test -d app
-          test -f app/build.gradle.kts
-          test -f settings.gradle.kts
-
-          echo "Android project OK."
-
-      - name: REMOVE ALL OLD ICON FILES
-        script: |
-          set -e
-
-          echo "======================================"
-          echo "REMOVING OLD AND DUPLICATE ICON FILES"
-          echo "======================================"
-
-          find app/src -type f -name "ic_launcher.webp" -print -delete
-          find app/src -type f -name "ic_launcher_round.webp" -print -delete
-          find app/src -type f -name "ic_launcher_foreground.xml" -print -delete
-          find app/src -type f -name "ic_launcher_foreground.png" -print -delete
-
-          rm -f app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
-          rm -f app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
-
-          echo ""
-          echo "Checking for remaining duplicate files..."
-
-          if find app/src -type f \( \
-            -name "ic_launcher.webp" -o \
-            -name "ic_launcher_round.webp" -o \
-            -name "ic_launcher_foreground.xml" -o \
-            -name "ic_launcher_foreground.png" \
-          \) | grep -q .; then
-
-            echo "ERROR: OLD ICON FILES STILL EXIST"
-            find app/src -type f \( \
-              -name "ic_launcher.webp" -o \
-              -name "ic_launcher_round.webp" -o \
-              -name "ic_launcher_foreground.xml" -o \
-              -name "ic_launcher_foreground.png" \
-            \)
-
-            exit 1
-          fi
-
-          echo "======================================"
-          echo "NO DUPLICATE ICON FILES FOUND"
-          echo "======================================"
-
-          echo "Remaining launcher resources:"
-          find app/src/main/res -type f -name "ic_launcher*" -print
+          echo "Checking RCS Vault Android project..."
+          test -d ./app
+          test -f ./app/build.gradle.kts
+          test -f ./settings.gradle.kts
+          test -f ./build.gradle.kts
+          test -f ./gradle/wrapper/gradle-wrapper.properties
+          echo "Android project files found."
 
       - name: Check signing
         script: |
           set -e
-
           test -n "$CM_KEYSTORE_PATH"
           test -n "$CM_KEYSTORE_PASSWORD"
           test -n "$CM_KEY_ALIAS"
           test -n "$CM_KEY_PASSWORD"
+          echo "Release signing configured."
+          echo "Alias: $CM_KEY_ALIAS"
 
-          echo "Signing configuration OK."
-
-      - name: Clean project
+      - name: Install Gradle 9.3.1
         script: |
           set -e
+          GRADLE_VERSION=9.3.1
+          GRADLE_ZIP="$CM_BUILD_DIR/gradle-${GRADLE_VERSION}-bin.zip"
+          GRADLE_DIR="$CM_BUILD_DIR/gradle-${GRADLE_VERSION}"
 
-          export GRADLE_HOME="$HOME/gradle/gradle-9.3.1"
-          export PATH="$GRADLE_HOME/bin:$PATH"
+          echo "Downloading Gradle ${GRADLE_VERSION}..."
+          curl -fsSL "https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip" -o "$GRADLE_ZIP"
+          rm -rf "$GRADLE_DIR"
+          unzip -q "$GRADLE_ZIP" -d "$CM_BUILD_DIR"
 
-          "$GRADLE_HOME/bin/gradle" \
-            --no-daemon \
-            --no-configuration-cache \
-            clean
+          export PATH="$GRADLE_DIR/bin:$PATH"
+          gradle --version
+
+          echo "Gradle 9.3.1 installed successfully."
+
+      - name: Verify launcher resources
+        script: |
+          set -e
+          if find app/src -type f \( -name 'ic_launcher.webp' -o -name 'ic_launcher_round.webp' \) | grep -q .; then
+            echo "ERROR: Duplicate launcher WEBP resources still exist:"
+            find app/src -type f \( -name 'ic_launcher.webp' -o -name 'ic_launcher_round.webp' \)
+            exit 1
+          fi
+          echo "No duplicate launcher WEBP resources found."
+
+      - name: Final launcher cleanup
+        script: |
+          set -e
+          find app/src -type f \(             -name 'ic_launcher.webp' -o             -name 'ic_launcher_round.webp' -o             -name 'ic_launcher_foreground.xml' -o             -name 'ic_launcher_foreground.png'           \) -delete
+          rm -f app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+          rm -f app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+          echo "Final launcher resources:"
+          find app/src/main/res -type f -name 'ic_launcher*' -print
 
       - name: Build signed release APK
         script: |
           set -e
+          export PATH="$CM_BUILD_DIR/gradle-9.3.1/bin:$PATH"
 
-          export GRADLE_HOME="$HOME/gradle/gradle-9.3.1"
-          export PATH="$GRADLE_HOME/bin:$PATH"
+          export KEYSTORE_PATH="$CM_KEYSTORE_PATH"
+          export STORE_PASSWORD="$CM_KEYSTORE_PASSWORD"
+          export KEY_ALIAS="$CM_KEY_ALIAS"
+          export KEY_PASSWORD="$CM_KEY_PASSWORD"
 
-          echo "Building RCS Vault APK..."
-
-          "$GRADLE_HOME/bin/gradle" \
-            --no-daemon \
-            --no-configuration-cache \
-            assembleRelease
-
-          echo "Searching APK..."
-
-          find app/build/outputs -type f -name "*.apk" -print
-
-      - name: Prepare APK
-        script: |
-          set -e
-
-          APK_DIR="app/build/outputs/apk/release"
-
-          if [ ! -f "$APK_DIR/app-release.apk" ]; then
-            echo "ERROR: APK not found."
-            find app/build/outputs -type f -print
-            exit 1
-          fi
-
-          cp "$APK_DIR/app-release.apk" "$APK_DIR/RCS-Vault.apk"
-
-          echo "======================================"
-          echo "RCS-Vault.apk READY"
-          echo "======================================"
-
-          ls -lh "$APK_DIR/RCS-Vault.apk"
+          echo "Building signed RCS Vault APK..."
+          gradle --no-daemon --no-configuration-cache clean assembleRelease
 
     artifacts:
       - app/build/outputs/apk/release/RCS-Vault.apk
+      - app/build/outputs/mapping/release/mapping.txt

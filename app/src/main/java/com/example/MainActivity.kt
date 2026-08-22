@@ -6,6 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.SystemBarStyle
 import androidx.activity.viewModels
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -58,6 +59,17 @@ fun MainAppRoot(viewModel: MainViewModel) {
     val selectedConversation by viewModel.selectedConversation.collectAsState()
     val snackbarMessage by viewModel.snackbarMessage.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+
+    // Android back behavior: navigate within the app before exiting.
+    // Settings/Messages/Media/Reports -> Home, conversation/privacy -> previous screen.
+    BackHandler(enabled = !showSplash && !isAppLocked && !showOnboarding) {
+        when {
+            showPrivacyPolicy -> showPrivacyPolicy = false
+            selectedConversation != null -> viewModel.closeConversation()
+            currentTab != NavigationTab.HOME -> viewModel.selectTab(NavigationTab.HOME)
+            else -> { /* already on Home; keep the app open */ }
+        }
+    }
 
     LaunchedEffect(snackbarMessage) {
         snackbarMessage?.let { msg ->
