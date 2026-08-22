@@ -349,7 +349,7 @@ fun SettingsScreen(
                                 letterSpacing = 0.5.sp
                             )
                             Text(
-                                text = UpdateManager.UPDATE_SERVER_BASE_URL,
+                                text = UpdateManager.VERSION_JSON_URL,
                                 fontSize = 11.sp,
                                 color = MintPrimary,
                                 fontWeight = FontWeight.Medium

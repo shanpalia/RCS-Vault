@@ -46,6 +46,9 @@ class UpdateManager(private val context: Context) {
         // also tried for compatibility with older deployments.
         const val VERSION_JSON_URL = "https://shanpalia.github.io/WebsitePaliaAPK_V.2/version.json"
         private const val LEGACY_VERSION_JSON_URL = "https://shanpalia.github.io/WebsitePaliaAPK_V.2/rcs-vault/version.json"
+        private const val RAW_GITHUB_VERSION_JSON_URL = "https://raw.githubusercontent.com/shanpalia/WebsitePaliaAPK_V.2/main/version.json"
+        private const val RAW_GITHUB_TEMPLATE_VERSION_JSON_URL = "https://raw.githubusercontent.com/shanpalia/WebsitePaliaAPK_V.2/main/update-server-template/version.json"
+        private const val RAW_GITHUB_MASTER_VERSION_JSON_URL = "https://raw.githubusercontent.com/shanpalia/WebsitePaliaAPK_V.2/master/version.json"
     }
 
     private val httpClient: OkHttpClient by lazy {
@@ -83,15 +86,24 @@ class UpdateManager(private val context: Context) {
      */
     suspend fun checkForUpdates(isManualCheck: Boolean = false): UpdateStatus = withContext(Dispatchers.IO) {
         try {
-            val candidateUrls = listOf(VERSION_JSON_URL, LEGACY_VERSION_JSON_URL).distinct()
+            val candidateUrls = listOf(
+                VERSION_JSON_URL,
+                LEGACY_VERSION_JSON_URL,
+                RAW_GITHUB_VERSION_JSON_URL,
+                RAW_GITHUB_TEMPLATE_VERSION_JSON_URL,
+                RAW_GITHUB_MASTER_VERSION_JSON_URL
+            ).distinct()
             var bodyString: String? = null
             var lastHttpError: String? = null
 
             for (url in candidateUrls) {
                 try {
-                    Log.d(TAG, "Checking update from $url")
+                    val cacheBustedUrl = Uri.parse(url).buildUpon()
+                        .appendQueryParameter("t", System.currentTimeMillis().toString())
+                        .build()
+                    Log.d(TAG, "Checking update from $cacheBustedUrl")
                     val request = Request.Builder()
-                        .url(url)
+                        .url(cacheBustedUrl.toString())
                         .header("User-Agent", "RCS-Vault-Android/${currentVersionName}")
                         .header("Cache-Control", "no-cache")
                         .build()
@@ -114,7 +126,7 @@ class UpdateManager(private val context: Context) {
 
             if (bodyString.isNullOrBlank()) {
                 return@withContext UpdateStatus.Error(
-                    lastHttpError ?: "Update server is unavailable",
+                    lastHttpError ?: "Update server is unavailable. Publish version.json on the official website.",
                     isManualCheck
                 )
             }

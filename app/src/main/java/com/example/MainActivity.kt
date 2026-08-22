@@ -3,15 +3,18 @@ package com.example
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.SystemBarStyle
-import androidx.activity.viewModels
+import androidx.core.view.WindowCompat
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.safeDrawing
 import com.example.ui.components.AppBottomNavigationBar
 import com.example.ui.components.UpdateDialog
 import com.example.ui.screens.*
@@ -24,16 +27,21 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Android 15+ enforces edge-to-edge for modern target SDKs. Use the
+        // official edge-to-edge API and consume safe-drawing insets in Compose
+        // so the header and bottom navigation never sit under system controls.
         enableEdgeToEdge(
             statusBarStyle = SystemBarStyle.light(
-                android.graphics.Color.WHITE,
-                android.graphics.Color.WHITE
+                android.graphics.Color.TRANSPARENT,
+                android.graphics.Color.TRANSPARENT
             ),
             navigationBarStyle = SystemBarStyle.light(
                 android.graphics.Color.TRANSPARENT,
                 android.graphics.Color.TRANSPARENT
             )
         )
+        WindowCompat.getInsetsController(window, window.decorView).isAppearanceLightStatusBars = true
+        WindowCompat.getInsetsController(window, window.decorView).isAppearanceLightNavigationBars = true
         setContent {
             MyApplicationTheme {
                 MainAppRoot(viewModel = viewModel)
@@ -108,15 +116,14 @@ fun MainAppRoot(viewModel: MainViewModel) {
         else -> {
             Scaffold(
                 snackbarHost = { SnackbarHost(snackbarHostState) },
+                contentWindowInsets = WindowInsets.safeDrawing,
                 bottomBar = {
                     AppBottomNavigationBar(
                         currentTab = currentTab,
                         onTabSelected = { viewModel.selectTab(it) }
                     )
                 },
-                modifier = Modifier
-                    .fillMaxSize()
-                    .statusBarsPadding()
+                modifier = Modifier.fillMaxSize()
             ) { innerPadding ->
                 AnimatedContent(
                     targetState = currentTab,
