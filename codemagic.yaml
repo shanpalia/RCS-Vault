@@ -102,6 +102,20 @@ workflows:
           echo "Building signed RCS Vault APK..."
           gradle --no-daemon --no-configuration-cache clean assembleRelease
 
+          echo "Searching generated APK..."
+          find app/build/outputs -type f -name "*.apk" -print
+
+          APK="app/build/outputs/apk/release/app-release.apk"
+          if [ ! -f "$APK" ]; then
+            echo "ERROR: app-release.apk was not generated."
+            find app/build/outputs -type f -print
+            exit 1
+          fi
+
+          cp "$APK" "app/build/outputs/apk/release/RCS-Vault.apk"
+
+          echo "Final artifact:"
+          ls -lh "app/build/outputs/apk/release/RCS-Vault.apk"
+
     artifacts:
       - app/build/outputs/apk/release/RCS-Vault.apk
-      - app/build/outputs/mapping/release/mapping.txt
